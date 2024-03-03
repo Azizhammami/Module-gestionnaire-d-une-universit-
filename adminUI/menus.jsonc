@@ -1,0 +1,62 @@
+{
+  "mainMenu": [
+    
+{
+
+      "icon": {
+        "name": "mdi-tools"
+      },
+      "title": "Matériels",
+      "to": "/matériel",
+      "key": "Matériel",
+      "position": "after records",
+      "roles": "root admin"
+
+    },
+    
+{
+
+      "icon": {
+        "name": "mdi-human-female-dance"
+      },
+      "title": "Sports",
+      "to": "/sport",
+      "key": "Sport",
+      "position": "after records",
+      "roles": "root admin"
+
+    },
+
+    
+{
+
+      "icon": {
+        "name": "mdi-account"
+      },
+      "title": "Coachs",
+      "to": "/coach",
+      "key": "Coach",
+      "position": "after records",
+      "roles": "root admin"
+
+    },
+{
+
+      "icon": {
+        "name": "mdi-account-check"
+      },
+      "title": "Clients",
+      "to": "/client",
+      "key": "Client",
+      "position": "after records",
+      "roles": "root admin"
+
+    }
+
+
+  ],
+  "profileMenu": [
+  ],
+  "hideMainMenu": [
+  ]
+}

@@ -1,0 +1,216 @@
+<template>
+  <div class="class-crud-page-class">
+    <!-- Breadcrumb Component -->
+    <CLoader cpn="Breadcrumb" title="Classes" :items="breadcrumb" class="mb-7 mt-3">
+      <template v-slot:homeIcon>
+        <img src="/images/store.png" style="width: 17px;margin-bottom: -1px;" />
+      </template>
+      <template v-slot:titleIcon>
+        <v-icon
+          color="#8f8f8f" 
+          size="50"
+          style="margin-right: 10px; margin-top: -30px; top: 10px; position: relative"
+        >mdi-reorder-horizontal</v-icon>
+      </template>
+    </CLoader>
+
+    <!-- CRUD Component -->
+    <CLoader
+      cpn="Crud"
+      ref="crud"
+      shaped
+      dialogType="dialog"
+      addSheetWidth="500"
+      editSheetWidth="500"
+      noTitle
+      :loading="loading"
+      singleName="class"
+      pluralName="classes"
+      :structure="structure"
+      :items="classes"
+      browseCustomView
+      @browseViewClick="viewClass"
+      browseRowClickable
+      emptyOnNewItem
+      :additionalHeaderSize="300"
+      @insertRequest="insertRequest"
+      @updateRequest="updateRequest"
+      @deleteRequest="deleteRequest"
+      searchable
+    >
+      <template v-slot:browse.item.logoId="{ item }"> 
+        <img :src="item.logo ? item.logo.path : '/images/placeholder.png'" class="class-thumbnail" />
+      </template>
+      <template v-slot:browse.item.departmentId="{ item }">
+        <span>
+          {{ getTextOf(item.departmentId, department_items) }}
+        </span>
+      </template>
+      <template v-slot:browse.item.courseIDs="{ item }">
+        <span>
+          {{ getTextOf(item.courseIDs, courses) }}
+        </span>
+      </template>
+    </CLoader>
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      loading: false,
+      classes: [],
+      department_items: [],
+      courses: [],
+    };
+  },
+  computed: {
+    breadcrumb() {
+      return [
+        {
+          text: "Classes",
+          to: "/classes",
+          disabled: false,
+        },
+      ];
+    },
+    structure() {
+      const items = this.department_items;
+      const classes = this.classes;
+      return [
+        { 
+          text: "Id",
+          value: "id",
+          type: "hidden",
+        },
+        {
+          text: "Name",
+          value: "name",
+          type: "text"
+        },
+        {
+          text: "Code",
+          value: "code",
+          type: "text",
+        },
+        {
+          text: "Department",
+          value: "departmentId",
+          type: "select",
+          typeData: {
+            items,
+          }
+        },
+        {
+          text: "Courses",
+          value: "courseIDs",
+          type: "multiple-select",
+          typeData: {
+            items:
+          this.courses,
+            multiple: true,
+          }
+        },
+        { 
+          text: this.$t('common.actions'),
+          value: "actions",
+          type: "actions",
+        },
+      ];
+    },
+  },
+  async created() {
+    await this.loadDepartments();
+    await this.loadClasses();
+    await this.loadCourses();
+  },
+  methods: { 
+    getTextOf(id, items) {
+      const x = items.find(item => item.value == id);
+      return x ? x.text : "-";
+    },
+    async loadDepartments() {
+      this.loading = true;
+      try {
+        const data = await this.$dataCaller("get", "/api/pr/departments");
+        this.department_items = data.map((dep) => {
+          return {
+            text: dep.name,
+            value: dep.id
+          };
+        });
+      } catch (error) {
+        console.error("Error loading departments:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    async loadClasses() {
+      this.loading = true;
+      try {
+        const data = await this.$dataCaller("get", "/api/pr/classes");
+        this.classes = data;
+      } catch (error) {
+        console.error("Error loading classes:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    async loadCourses() {
+      this.loading = true;
+      try {
+        const data = await this.$dataCaller("get", "/api/pr/courses");
+        if (Array.isArray(data)) {
+          this.courses = data.map((course) => {
+            return {
+              text: course.name,
+              value: course.ids
+            };
+          });
+        } else {
+          console.error("Received data is not an array:", data);
+        }
+      } catch (error) {
+        console.error("Error loading courses:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    viewClass(item) {
+      this.$refs.crud.cp.browse.openUpdatePanel(item);
+    },
+    insertRequest(data) {
+      this.$dataCaller("post", "/api/pr/classes", data).then((_) => {
+        this.loading = false;
+        this.loadClasses();
+      });
+    },
+    updateRequest(data) {
+      this.$dataCaller("put", "/api/pr/classes/" + data.id, data).then((_) => {
+        this.loading = false;
+        this.loadClasses();
+      });
+    },
+    deleteRequest(data) {
+      this.$dataCaller("delete", "/api/pr/classes/" + data.id).then((_) => {
+        this.loading = false;
+        this.loadClasses();
+      });
+    },
+  },
+};
+</script>
+
+<style>
+  .class-crud-page-class .class-thumbnail {
+    width: 100px;
+    height: 70px;
+    border: 1px solid #c1c1c1;
+    border-radius: 4px;
+    object-fit: cover;
+    background-color: white;
+    padding: 1px;
+    margin-top: 5px;
+  }
+</style>

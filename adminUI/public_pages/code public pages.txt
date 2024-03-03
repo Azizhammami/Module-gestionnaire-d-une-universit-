@@ -1,0 +1,66 @@
+ "menus": {
+      "mainMenu": [
+        {
+          "icon": {
+            "name": "mdi-google-classroom"
+          },
+          "title": "ClassLink",
+          "to": "/p/projet_stage/classLink",
+          "key": "classLink",
+          "position": "after records",
+          "roles": "root admin"
+        },
+        {
+          "icon": {
+            "name": "mdi-account-school-outline"
+          },
+          "title": "Students",
+          "to": "/p/projet_stage/student",
+          "key": "Student",
+          "position": "after records",
+          "roles": "root admin"
+        },
+        {
+          "icon": {
+            "name": "mdi-human-male-board"
+          },
+          "title": "Professors",
+          "to": "/p/projet_stage/professor",
+          "key": "professor",
+          "position": "after records",
+          "roles": "root admin"
+        },
+        {
+          "icon": {
+            "name": "mdi-book-education-outline"
+          },
+          "title": "Courses",
+          "to": "/p/projet_stage/course",
+          "key": "Course",
+          "position": "after records",
+          "roles": "root admin"
+        },
+        {
+          "icon": {
+            "name": "mdi-reorder-horizontal"
+          },
+          "title": "Classes",
+          "to": "/p/projet_stage/classe",
+          "key": "classe",
+          "position": "after records",
+          "roles": "root admin"
+        },
+        {
+          "icon": {
+            "name": "mdi-office-building-cog"
+          },
+          "title": "Departments",
+          "to": "/p/projet_stage/department",
+          "key": "department",
+          "position": "after records",
+          "roles": "root admin"
+        }
+      ],
+      "profileMenu": [],
+      "hideMainMenu": []
+    },

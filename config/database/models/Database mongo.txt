@@ -1,0 +1,159 @@
+"config": {
+    "dbSeed": [],
+    "dbSchema": {
+      "Class": {
+        "model": "Class",
+        "table": "classes",
+        "attributes": {
+          "version": "1.0.0",
+          "name": "",
+          "code": "",
+          "departmentId": null,
+          "courseIDs": null,
+          "ownerId": null
+        },
+        "options": {
+          "relations": {
+            "logoId": {
+              "type": "BELONGS_TO",
+              "model": "Media",
+              "byId": true,
+              "jsonField": "logo"
+            },
+            "departmentId": {
+              "type": "BELONGS_TO",
+              "model": "Department",
+              "byId": true,
+              "jsonField": "department"
+            },
+            "courseIds": {
+              "type": "HAS_MANY",
+              "model": "Course",
+              "byIDs": true,
+              "jsonField": "course"
+            }
+          }
+        }
+      },
+      "Course": {
+        "model": "Course",
+        "table": "Courses",
+        "attributes": {
+          "version": "1.0.0",
+          "name": "",
+          "code": "",
+          "instructor": "",
+          "description": "",
+          "coefficient": "",
+          "ownerId": null
+        },
+        "options": {
+          "relations": {}
+        }
+      },
+      "Department": {
+        "model": "Department",
+        "table": "departments",
+        "attributes": {
+          "version": "1.0.0",
+          "name": "",
+          "professorId": null,
+          "location": "",
+          "phonenumber": "",
+          "emailaddress": "",
+          "ownerId": null,
+          "classIDs": null
+        },
+        "options": {
+          "relations": [
+            {
+              "type": "HAS_ONE",
+              "model": "Professor",
+              "byId": true,
+              "jsonField": "professor"
+            },
+            {
+              "type": "HAS_MANY",
+              "model": "Class",
+              "byIDs": true,
+              "jsonField": "class"
+            }
+          ]
+        }
+      },
+      "Professor": {
+        "model": "Professor",
+        "table": "professors",
+        "attributes": {
+          "version": "1.0.0",
+          "firstName": "",
+          "lastName": "",
+          "address": "",
+          "email": "",
+          "birthdayDate": "",
+          "phone": "",
+          "identity": "",
+          "gender": "",
+          "startDate": "",
+          "positionTitle": "",
+          "ownerId": null,
+          "courseIDs": null,
+          "classIDs": null
+        },
+        "options": {
+          "relations": [
+            {
+              "type": "HAS_MANY",
+              "model": "Course",
+              "byIDs": true,
+              "jsonField": "course"
+            },
+            {
+              "type": "HAS_MANY",
+              "model": "Class",
+              "byIDs": true,
+              "jsonField": "class"
+            }
+          ]
+        }
+      },
+      "Student": {
+        "model": "Student",
+        "table": "students",
+        "attributes": {
+          "version": "1.0.0",
+          "photoId": null,
+          "studentid": "",
+          "firstname": "",
+          "lastname": "",
+          "birthdaydate": "",
+          "gender": "",
+          "email": "",
+          "phone": "",
+          "classId": null,
+          "address": "",
+          "country": "",
+          "ownerId": null
+        },
+        "options": {
+          "relations": {
+            "photoId": {
+              "type": "BELONGS_TO",
+              "model": "Media",
+              "byId": true,
+              "jsonField": "photo"
+            },
+            "classId": {
+              "type": "BELONGS_TO",
+              "model": "Class",
+              "byId": true,
+              "jsonField": "class"
+            }
+          }
+        }
+      }
+    },
+    "hooks": {},
+    "settingsSchema": [],
+    "settingsData": []
+  },

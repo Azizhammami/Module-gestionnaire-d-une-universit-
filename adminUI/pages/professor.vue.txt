@@ -1,0 +1,347 @@
+<template>
+  <div class="professor-crud-page-class">
+    <CLoader cpn="Breadcrumb" title="Professors" :items="breadcrumb" class="mb-7 mt-3">
+      <template v-slot:homeIcon>
+        <img src="/images/store.png" style="width: 17px;margin-bottom: -1px;" />
+      </template>
+      <template v-slot:titleIcon>
+        <v-icon
+          color="#8f8f8f" 
+          size="50"
+          style="margin-right: 10px; margin-top: -30px; top: 10px; position: relative"
+        >mdi-human-male-board</v-icon>
+      </template>
+    </CLoader>
+    <CLoader
+      cpn="Crud"
+      ref="crud"
+      shaped
+      dialogType="dialog"
+      addSheetWidth="500"
+      editSheetWidth="500"
+      noTitle
+      :loading="loading"
+      singleName="professor"
+      pluralName="professors"
+      :structure="structure"
+      :items="professors"
+      browseCustomView
+      @browseViewClick="viewProfessor"
+      browseRowClickable
+      emptyOnNewItem
+      :additionalHeaderSize="300"
+      @insertRequest="insertRequest"
+      @updateRequest="updateRequest"
+      @deleteRequest="deleteRequest"
+      searchable
+    >
+      <template v-slot:browse.item.icon="{ item }"> 
+        <img :src="item.icon ? item.icon.path : '/images/placeholder.png'" class="professor-thumbnail" />
+      </template>
+      <template v-slot:browse.item.courseIDS="{ item }">
+        <span>{{ getTextOf(item.courseIDS, courses) }}</span>
+      </template>
+      <template v-slot:browse.item.classIDS="{ item }">
+        <span>{{ getTextOf(item.classIDS, classes) }}</span>
+      </template>
+    </CLoader>
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      loading: false,
+      professors: [],
+      courses: [],
+      classes: [], 
+    };
+  },
+  computed: {
+    breadcrumb() {
+      return [
+        {
+          text: "Professors",
+          to: "/professors",
+          disabled: false,
+        },
+      ];
+    },
+    structure() {
+      return [
+        { 
+          text: "ID",
+          value: "id",
+          type: "hidden",
+        },
+        {
+          text: "First Name",
+          value: "firstName",
+          type: "text"
+        },
+        {
+          text: "Last Name",
+          value: "lastName",
+          type: "text"
+        },
+        {
+          text: "Address",
+          value: "address",
+          type: "text",
+          hideBrowse:true
+        },
+        {
+          text: "Email",
+          value: "email",
+          type: "text"
+        },
+        {
+          text: "Birthday Date",
+          value: "birthdayDate",
+          type: "khafield",
+					schema: {
+						type: "text",
+						inputType: "datetime-local",
+					},
+          hideBrowse:true,
+        },
+        {
+          text: "Phone",
+          value: "phone",
+          type: "text"
+        },
+        {
+          text: "Identity",
+          value: "identity",
+          type: "text",
+          hideBrowse:true
+        },
+        {
+          text: "Gender",
+          value: "gender",
+          type: "select",
+          typeData: {
+            items: ['Male', 'Female'],
+          },
+          hideBrowse:true
+        },
+        {
+          text: "Start Date",
+          value: "startDate",
+          type: "khafield",
+					schema: {
+						type: "text",
+						inputType: "datetime-local",
+					},
+          hideBrowse: true,
+        },
+        {
+          text: "Courses",
+          value: "courseIDs",
+          type: "select",
+          typeData: {
+            items: this.courses, 
+            multiple: true,
+          }
+        },
+        {
+          text: "Classes",
+          value: "classIDs",
+          type: "select",
+          typeData: {
+          items: this.classes, 
+          multiple: true,
+          }
+        },
+        {
+          text: "Position/Title",
+          value: "positionTitle",
+          type: "text",
+          hideBrowse:true,
+        },
+        { 
+          text: this.$t('common.actions'),
+          value: "actions",
+          type: "actions",
+        },
+      ];
+    },
+  },
+  async mounted() {
+    await this.loadProfessors();
+    await this.loadCourses();
+    await this.loadClasses(); 
+  },
+  methods: { 
+    validateFields(item, mode) {
+      var errors = [];
+
+      if (!item.firstName || item.firstName.length <= 0) {
+        errors.push("First Name is required");
+      }
+      if (!item.lastName || item.lastName.length <= 0) {
+        errors.push("Last Name is required");
+      }
+      if (!item.address || item.address.length <= 0) {
+        errors.push("Address is required");
+      }
+      if (!item.email || !/\S+@\S+\.\S+/.test(item.email)) {
+        errors.push("Email Address is required and should be valid");
+      }
+      if (!item.birthdayDate || item.birthdayDate.length <= 0) {
+        errors.push("Birthday Date is required");
+      }
+      if (!item.phone || !/^216\d{8}$/.test(item.phone)) {
+        errors.push("Phone Number is required and should start with 216 and be 10 digits");
+      }
+      if (!item.identity || item.identity.length !== 8 || !/^[01]\d{7}$/.test(item.identity)) {
+        errors.push("Identity must be 8 numbers and start with 0 or 1");
+      }
+      if (!item.gender || item.gender.length <= 0) {
+        errors.push("Gender is required");
+      }
+      if (!item.startDate || item.startDate.length <= 0) {
+        errors.push("Start Date is required");
+      }
+      if (!item.positionTitle || item.positionTitle.length <= 0) {
+        errors.push("Position/Title is required");
+      }
+      if (item.birthdayDate === item.startDate) {
+        errors.push("Birthday Date and Start Date cannot be the same");
+      }
+      // Check if the starting date is the same as the birthday date
+      const startDate = new Date(item.startDate);
+      const birthdayDate = new Date(item.birthdayDate);
+      if (startDate.getTime() === birthdayDate.getTime()) {
+        errors.push("Start Date and Birthday Date cannot be the same");
+      }
+      // Check if age is under 24
+      const currentDate = new Date();
+      const ageDiff = currentDate.getFullYear() - birthdayDate.getFullYear();
+      if (ageDiff < 24) {
+        errors.push("Age must be 24 or older");
+      }
+
+      if (!item.courseIDs) {
+        errors.push("Courses are required");
+      }
+      if (!item.classIDs) {
+        errors.push("Classes are required");
+      }
+
+      if (errors.length > 0) {
+        for (let i = 0; i < errors.length; i++) {
+          const error = errors[i];
+          this.$toast.warning(error);
+        }
+        if (mode == "edit") {
+          this.$refs.crud.cp.browse.openUpdatePanel(item);
+        } else {
+          this.$nextTick(() => {
+            for (var header of this.$refs.crud.cp.structure) {
+              this.$set(this.$refs.crud.cp.newInputsData, header.value, item[header.value] || "");
+            }
+            this.$refs.crud.cp.browse.newClick();
+          });
+        }
+        return false;
+      } else {
+        return true;
+      }
+    },
+    getTextOf(id, items) {
+      const x = items.find(item => item.value == id);
+      if (x) return x.text;
+      return "-";
+    },
+    async loadProfessors() {
+      this.loading = true;
+      try {
+        const data = await this.$dataCaller("get", "/api/pr/professors");
+        this.professors = data;
+      } catch (error) {
+        console.error("Error loading professors:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    async loadCourses() {
+      this.loading = true;
+      try {
+        const data = await this.$dataCaller("get", "/api/pr/courses");
+        if (Array.isArray(data)) {
+          this.courses = data.map((cou) => {
+            return {
+              text: cou.name,
+              value: cou.ids
+            };
+          });
+        } else {
+          console.error("Received data is not an array:", data);
+        }
+      } catch (error) {
+        console.error("Error loading courses:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    async loadClasses() {
+      this.loading = true;
+      try {
+        const data = await this.$dataCaller("get", "/api/pr/classes");
+        if (Array.isArray(data)) {
+          this.classes = data.map((cla) => {
+            return {
+              text: cla.name,
+              value: cla.ids
+            };
+          });
+        } else {
+          console.error("Received data is not an array:", data);
+        }
+      } catch (error) {
+        console.error("Error loading classes:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    viewProfessor(item) {
+      this.$refs.crud.cp.browse.openUpdatePanel(item);
+    },
+    insertRequest(data) {
+      this.loading = true;
+      if (!this.validateFields(data, "add")) return;
+      this.$dataCaller("post", "/api/pr/professors", data).then((_) => {
+        this.loadProfessors();
+      });
+    },
+    updateRequest(data) {
+      this.loading = true;
+      if (!this.validateFields(data, "edit")) return;
+      this.$dataCaller("put", "/api/pr/professors/" + data.id, data).then((_) => {
+        this.loadProfessors();
+      });
+    },
+    deleteRequest(data) {
+      this.loading = true;
+      this.$dataCaller("delete", "/api/pr/professors/" + data.id).then((_) => {
+        this.loadProfessors();
+      });
+    },
+  },
+};
+</script>
+
+<style>
+.professor-crud-page-class .professor-thumbnail {
+  width: 100px;
+  height: 70px;
+  border: 1px solid #c1c1c1;
+  border-radius: 4px;
+  object-fit: cover;
+  background-color: white;
+  padding: 1px;
+  margin-top: 5px;
+}
+</style>

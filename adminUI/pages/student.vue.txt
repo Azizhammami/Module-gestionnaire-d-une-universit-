@@ -1,0 +1,295 @@
+<template>
+  <div class="student-crud-page-class">
+    <CLoader cpn="Breadcrumb" title="Students" :items="breadcrumb" class="mb-7 mt-3">
+      <template v-slot:homeIcon>
+        <img src="/images/store.png" style="width: 17px;margin-bottom: -1px;" />
+      </template>
+      <template v-slot:titleIcon>
+        <v-icon color="#8f8f8f" size="50" style="margin-right: 10px; margin-top: -30px; top: 10px; position: relative">mdi-account-school-outline</v-icon>
+      </template>
+    </CLoader>
+    <CLoader cpn="Crud" ref="crud" shaped dialogType="dialog" addSheetWidth="500" editSheetWidth="500" noTitle :loading="loading" singleName="student" pluralName="students" :structure="structure" :items="students" browseCustomView @browseViewClick="viewStudent" browseRowClickable emptyOnNewItem :additionalHeaderSize="300" @insertRequest="insertRequest" @updateRequest="updateRequest" @deleteRequest="deleteRequest" searchable>
+
+      <template v-slot:browse.item.photoId="{ item }">
+        <img :src="item.photo ? item.photo.path : '/images/placeholder.png'" class="student-thumbnail" />
+      </template>
+      <template v-slot:browse.item.classId="{ item }">
+        <span>{{ getTextOf(item.classId, class_items) }}</span>
+      </template>
+    </CLoader>
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      loading: false,
+      students: [],
+      class_items: []
+    };
+  },
+  computed: {
+    breadcrumb() {
+      return [
+        {
+          text: "Students",
+          to: "/students",
+          disabled: false,
+        },
+      ];
+    },
+    structure() {
+      return [
+        {
+          text: "Id",
+          value: "id",
+          type: "hidden",
+        },
+        {
+          text: "Photo",
+          value: "photoId",
+          type: "image"
+        },
+        {
+          text: "Student ID",
+          value: "studentid",
+          type: "text",
+        },
+        {
+          text: "FirstName",
+          value: "firstname",
+          type: "text",
+        },
+        {
+          text: "LastName",
+          value: "lastname",
+          type: "text",
+        },
+        {
+          text: "Birthday Date",
+          value: "birthdaydate",
+          type: "khafield",
+					schema: {
+						type: "text",
+						inputType: "datetime-local",
+					},
+        },
+        {
+          text: "Gender",
+          value: "gender",
+          type: "select",
+          typeData: {
+            items: ['Male', 'Female'],
+          }
+        },
+        {
+          text: "Email Address",
+          value: "email",
+          type: "text",
+        },
+        {
+          text: "Phone Number",
+          value: "phone",
+          type: "text",
+        },
+        {
+          text: "Class",
+          value: "classId",
+          type: "select",
+          typeData: {
+            items: this.class_items,
+          }
+        },
+        {
+          text: "Address",
+          value: "address",
+          type: "text",
+          hideBrowse: true,
+        },
+        {
+          text: "Country",
+          value: "country",
+          type: "text",
+          hideBrowse: true,
+        },
+        {
+          text: this.$t('common.actions'),
+          value: "actions",
+          type: "actions",
+        },
+      ];
+    },
+  },
+  async mounted() {
+    await this.loadClasses();
+    await this.loadStudents();
+  },
+  methods: {
+    validateFields(item, mode) {
+      var errors = [];
+      if (!item.studentid || !/^[01]\d{7}$/.test(item.studentid)) {
+        errors.push("Student ID is required and should be 8 digits starting with 0 or 1");
+      }
+      if (!item.firstname || item.firstname.length <= 0) {
+        errors.push("First Name is required");
+      }
+      if (!item.lastname || item.lastname.length <= 0) {
+        errors.push("Last Name is required");
+      }
+      if (!item.birthdaydate || item.birthdaydate.length <= 0) {
+        errors.push("Birthday Date is required");
+      } else {
+        // Calculate age from birthday date
+        const birthDate = new Date(item.birthdaydate);
+        const currentDate = new Date();
+        const age = currentDate.getFullYear() - birthDate.getFullYear();
+        const monthDiff = currentDate.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && currentDate.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        // Check if age is less than 19
+        if (age < 19) {
+          errors.push("Student must be at least 19 years old");
+        }
+      }
+      if (!item.gender || item.gender.length <= 0) {
+        errors.push("Gender is required");
+      }
+      if (!item.email || !/\S+@\S+\.\S+/.test(item.email)) {
+        errors.push("Email Address is required and should be valid");
+      }
+      if (!item.phone || !/^216\d{8}$/.test(item.phone)) {
+        errors.push("Phone Number is required and should start with 216 and be 10 digits");
+      }
+      if (!item.classId) {
+        errors.push("Class is required");
+      }
+      if (!item.address || item.address.length <= 0) {
+        errors.push("Address is required");
+      }
+      if (!item.country || item.country.length <= 1) {
+        errors.push("Country is required and should be more than 1 letter");
+      }
+      if (errors.length > 0) {
+        for (let i = 0; i < errors.length; i++) {
+          const error = errors[i];
+          this.$toast.warning(error);
+        }
+        if (mode == "edit") {
+          this.$refs.crud.cp.browse.openUpdatePanel(item);
+        } else {
+          this.$nextTick(() => {
+            for (var header of this.$refs.crud.cp.structure) {
+              this.$set(this.$refs.crud.cp.newInputsData, header.value, item[header.value] || "");
+            }
+            this.$refs.crud.cp.browse.newClick();
+          });
+        }
+        return false;
+      } else {
+        return true;
+      }
+    },
+    getTextOf(id, items) {
+      const x = items.find(item => item.value == id);
+      if (x) return x.text;
+      return "-";
+    },
+    async loadClasses() {
+      this.loading = true;
+      try {
+        const data = await this.$dataCaller("get", "/api/pr/classes");
+        this.class_items = data.map((cla) => {
+          return {
+            text: cla.name,
+            value: cla.id
+          };
+        });
+      } catch (error) {
+        console.error("Error loading classes:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    async loadStudents() {
+      this.loading = true;
+      try {
+        const data = await this.$dataCaller("get", "/api/pr/students");
+        this.students = data;
+      } catch (error) {
+        console.error("Error loading students:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    viewStudent(item) {
+      this.$refs.crud.cp.browse.openUpdatePanel(item);
+    },
+    insertRequest(data) {
+      if (!this.validateFields(data, "add")) return;
+      if (this.students.some(student => student.studentid === data.studentid)) {
+        this.$toast.warning("Student with this ID already exists.");
+        this.$nextTick(() => {
+          for (var header of this.$refs.crud.cp.structure) {
+            this.$set(this.$refs.crud.cp.newInputsData, header.value, data[header.value] || "");
+          }
+        });
+        return;
+      }
+      this.loading = true;
+      this.$dataCaller("post", "/api/pr/students", data)
+        .then((_) => {
+          this.loadStudents();
+        })
+        .catch((error) => {
+          console.error("Error inserting student:", error);
+        })
+        .finally(() => {
+          this.loading = false;
+        });
+    },
+    updateRequest(data) {
+      if (!this.validateFields(data, "edit")) return;
+      this.loading = true;
+      this.$dataCaller("put", "/api/pr/students/" + data.id, data)
+        .then((_) => {
+          this.loadStudents();
+        })
+        .catch((error) => {
+          console.error("Error updating student:", error);
+        })
+        .finally(() => {
+          this.loading = false;
+        });
+    },
+    deleteRequest(data) {
+      this.loading = true;
+      this.$dataCaller("delete", "/api/pr/students/" + data.id)
+        .then((_) => {
+          this.loadStudents();
+        })
+        .catch((error) => {
+          console.error("Error deleting student:", error);
+        })
+        .finally(() => {
+          this.loading = false;
+        });
+    },
+  },
+};
+</script>
+
+<style>
+.student-crud-page-class .student-thumbnail {
+  width: 70px;
+    height: 70px;
+    border: 1px solid #c1c1c1;
+    border-radius: 100%;
+    aspect-ratio: 1; /* Setting aspect-ratio to ensure it remains a perfect circle */
+    object-fit: cover;
+    background-color: white;
+    padding: 1px;
+    margin-top: 5px;
+}
+</style>

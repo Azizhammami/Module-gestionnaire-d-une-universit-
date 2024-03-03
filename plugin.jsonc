@@ -1,0 +1,9 @@
+{
+  "engine_version": "2",
+  "pluginVersion": "0.0.1",
+  "name": "My internship project",
+  "key": "myinternshipproject",
+  "description": "A plugin for the KhaCloud platform",
+  "icon": "",
+  "permissions": {}
+}

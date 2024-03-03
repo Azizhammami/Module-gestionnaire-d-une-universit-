@@ -1,0 +1,205 @@
+<template>
+    <div class="department-crud-page-class">
+        <CLoader cpn="Breadcrumb" title="Departments" :items="breadcrumb" class="mb-7 mt-3">
+            <template v-slot:homeIcon>
+                <img src="/images/store.png" style="width: 17px;margin-bottom: -1px;" />
+            </template>
+            <template v-slot:titleIcon>
+                <v-icon
+                    color="#8f8f8f" 
+                    size="50"
+                    style="margin-right: 10px; margin-top: -30px; top: 10px; position: relative">mdi-office-building-cog</v-icon>
+            </template>
+        </CLoader>
+
+        <CLoader
+            cpn="Crud"
+            ref="crud"
+            shaped
+            dialogType="dialog"
+            addSheetWidth="500"
+            editSheetWidth="500"
+            noTitle
+            :loading="loading"
+            singleName="department"
+            pluralName="departments"
+            :structure="structure"
+            :items="departments"
+            browseCustomView
+            @browseViewClick="viewDepartment"
+            browseRowClickable
+            emptyOnNewItem
+            :additionalHeaderSize="300"
+            @insertRequest="insertRequest"
+            @updateRequest="updateRequest"
+            @deleteRequest="deleteRequest"
+            searchable
+        >
+            <template v-slot:browse.item.icon="{ item }"> 
+                <img :src="item.icon ? item.icon.path : '/images/placeholder.png'" class="department-thumbnail" />
+            </template>
+            <template v-slot:browse.item.professorId="{ item }">
+                <span>{{ getTextOf(item.professorId, professor_items) }}</span>
+            </template>
+        </CLoader>
+    </div>
+</template>
+
+<script>
+export default {
+    data() {
+        return {
+            loading: false,
+            departments: [],
+            professor_items: [],
+        };
+    },
+    computed: {
+        breadcrumb() {
+            return [
+                {
+                    text: "Departments",
+                    to: "/departments",
+                    disabled: false,
+                },
+            ];
+        },
+        structure() {
+            return [
+                { 
+                    text: "Id",
+                    value: "id",
+                    type: "hidden",
+                },
+                {
+                    text: "Name",
+                    value: "name",
+                    type: "text"
+                },
+                { 
+                    text: "Head of Department",
+                    value: "professorId",
+                    type: "select",
+                    typeData: {
+                        items: this.professor_items,
+                    }
+                },
+                { 
+                    text: "Location",
+                    value: "location",
+                    type: "text"
+                },
+                { 
+                    text: "Phone Number",
+                    value: "phoneNumber",
+                    type: "text"
+                },
+                { 
+                    text: "Email Address",
+                    value: "emailAddress",
+                    type: "text"
+                },
+                {
+                    text: "Classes",
+                    value: "classIds",
+                    type: "select",
+                    typeData: {
+                        items: this.class_items,
+                    }
+                },
+                { 
+                    text: this.$t('common.actions'),
+                    value: "actions",
+                    type: "actions",
+                },
+            ];
+        },
+    },
+    mounted() {
+        this.loadProfessors();
+        this.loadDepartments();
+    },
+    methods: { 
+        getTextOf(id, items) {
+            const foundItem = items.find(item => item.value == id);
+            return foundItem ? foundItem.text : "-";
+        },
+        async loadProfessors() {
+            this.loading = true;
+            try {
+                const data = await this.$dataCaller("get", "/api/pr/professors");
+                this.professor_items = data.map(pro => ({
+                    text: pro.name,
+                    value: pro.id
+                }));
+            } catch (error) {
+                console.error("Error loading professors:", error);
+            } finally {
+                this.loading = false;
+            }
+        },
+        loadDepartments() {
+            this.loading = true;
+            this.$dataCaller("get", "/api/pr/departments")
+                .then(data => {
+                    this.departments = data;
+                })
+                .catch(error => {
+                    console.error("Error loading departments:", error);
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
+        viewDepartment(item) {
+            this.$refs.crud.cp.browse.openUpdatePanel(item);
+        },
+        async insertRequest(data) {
+            try {
+                this.loading = true;
+                await this.$dataCaller("post", "/api/pr/departments", data);
+                this.loadDepartments();
+            } catch (error) {
+                console.error("Error inserting department:", error);
+            } finally {
+                this.loading = false;
+            }
+        },
+        async updateRequest(data) {
+            try {
+                this.loading = true;
+                await this.$dataCaller("put", "/api/pr/departments/" + data.id, data);
+                this.loadDepartments();
+            } catch (error) {
+                console.error("Error updating department:", error);
+            } finally {
+                this.loading = false;
+            }
+        },
+        async deleteRequest(data) {
+            try {
+                this.loading = true;
+                await this.$dataCaller("delete", "/api/pr/departments/" + data.id);
+                this.loadDepartments();
+            } catch (error) {
+                console.error("Error deleting department:", error);
+            } finally {
+                this.loading = false;
+            }
+        },
+    },
+}
+</script>
+
+<style>
+.department-crud-page-class .department-thumbnail {
+    width: 100px;
+    height: 70px;
+    border: 1px solid #c1c1c1;
+    border-radius: 4px;
+    object-fit: cover;
+    background-color: white;
+    padding: 1px;
+    margin-top: 5px;
+}
+</style>

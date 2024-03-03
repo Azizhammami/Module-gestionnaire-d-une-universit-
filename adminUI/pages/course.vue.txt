@@ -1,0 +1,175 @@
+<template>
+  <div class="course-crud-page">
+    <!-- Breadcrumb Component -->
+    <CLoader cpn="Breadcrumb" title="Courses" :items="breadcrumb" class="mb-7 mt-3">
+      <template v-slot:homeIcon>
+        <img src="/images/store.png" style="width: 17px;margin-bottom: -1px;" />
+      </template>
+      <template v-slot:titleIcon>
+        <v-icon
+          color="#8f8f8f" 
+          size="50"
+          style="margin-right: 10px; margin-top: -30px; top: 10px; position: relative"
+        >mdi-reorder-horizontal</v-icon>
+      </template>
+    </CLoader>
+
+    <!-- CRUD Component -->
+    <CLoader
+      cpn="Crud"
+      ref="crud"
+      shaped
+      dialogType="dialog"
+      addSheetWidth="500"
+      editSheetWidth="500"
+      noTitle
+      :loading="loading"
+      singleName="course"
+      pluralName="courses"
+      :structure="structure"
+      :items="courses"
+      browseCustomView
+      @browseViewClick="viewCourse"
+      browseRowClickable
+      emptyOnNewItem
+      :additionalHeaderSize="300"
+      @insertRequest="insertRequest"
+      @updateRequest="updateRequest"
+      @deleteRequest="deleteRequest"
+      searchable
+    >
+      <template v-slot:browse.item.logoId="{ item }"> 
+        <img :src="item.logo ? item.logo.path : '/images/placeholder.png'" class="course-thumbnail" />
+      </template>
+    </CLoader>
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      loading: false,
+      courses: [],
+    };
+  },
+  computed: {
+    breadcrumb() {
+      return [
+        {
+          text: "Courses",
+          to: "/courses",
+          disabled: false,
+        },
+      ];
+    },
+    structure() {
+      return [
+        { 
+          text: "Id",
+          value: "id",
+          type: "hidden",
+        },
+        {
+          text: "Name",
+          value: "name",
+          type: "text"
+        },
+        {
+          text: "Code",
+          value: "code",
+          type: "text",
+        },
+        {
+          text: "Description",
+          value: "description",
+          type: "textarea",
+        },
+        {
+          text: "Coefficient",
+          value: "coefficient",
+          type: "number",
+        },
+        { 
+          text: this.$t('common.actions'),
+          value: "actions",
+          type: "actions",
+        },
+      ];
+    },
+  },
+  created() {
+    this.loadCourses();
+  },
+  methods: { 
+    async loadCourses() {
+      this.loading = true;
+      try {
+        const data = await this.$dataCaller("get", "/api/pr/courses");
+        this.courses = data;
+      } catch (error) {
+        console.error("Error loading courses:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    viewCourse(item) {
+      this.$refs.crud.cp.browse.openUpdatePanel(item);
+    },
+    validateItems(item) {
+      const errors = [];
+      if (!item.name || item.name.trim().length === 0) {
+        errors.push("Name is required");
+      }
+      if (!item.code || item.code.trim().length === 0) {
+        errors.push("Code is required");
+      }
+      if (!item.description || item.description.trim().length === 0) {
+        errors.push("Description is required");
+      }
+      if (!item.coefficient || isNaN(item.coefficient)) {
+        errors.push("Coefficient is required and must be a number");
+      }
+      if (errors.length > 0) {
+        errors.forEach(error => this.$toast.warning(error));
+        return false;
+      } else {
+        return true;
+      }
+    },
+    insertRequest(data) {
+      if (!this.validateItems(data)) return;
+      this.$dataCaller("post", "/api/pr/courses", data).then((_) => {
+        this.loading = false;
+        this.loadCourses();
+      });
+    },
+    updateRequest(data) {
+      if (!this.validateItems(data)) return;
+      this.$dataCaller("put", "/api/pr/courses/" + data.id, data).then((_) => {
+        this.loading = false;
+        this.loadCourses();
+      });
+    },
+    deleteRequest(data) {
+      this.$dataCaller("delete", "/api/pr/courses/" + data.id).then((_) => {
+        this.loading = false;
+        this.loadCourses();
+      });
+    },
+  },
+};
+</script>
+
+<style>
+  .course-crud-page .course-thumbnail {
+    width: 100px;
+    height: 70px;
+    border: 1px solid #c1c1c1;
+    border-radius: 4px;
+    object-fit: cover;
+    background-color: white;
+    padding: 1px;
+    margin-top: 5px;
+  }
+</style>
